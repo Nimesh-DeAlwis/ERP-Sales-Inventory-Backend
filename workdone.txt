@@ -1,0 +1,5 @@
+  DATE              WORK DONE 
+
+
+2026-1-03   The user authentication module has been implemented with username and password validation, permission-based location loading, session management, and JWT-based authentication.
+2026-1-18   Implemented user CRUD, validation (NIC, phone, ID), image upload, search with pagination, exports, soft delete, and transaction support.
