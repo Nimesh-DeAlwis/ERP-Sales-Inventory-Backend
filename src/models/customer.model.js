@@ -5,6 +5,7 @@ class Customer {
         this.firstName = data.firstName || data.CM_FNAME || '';
         this.lastName = data.lastName || data.CM_LNAME || '';
         this.fullName = data.fullName || data.CM_FULLNAME || '';
+        this.name = data.name || data.CM_FULLNAME || data.fullName || `${data.CM_FNAME || ''} ${data.CM_LNAME || ''}`.trim() || '';
         this.groupCode = data.groupCode || data.CM_GROUP || '';
         this.nic = data.nic || data.CM_NIC || '';
         this.status = data.status !== undefined ? data.status : 

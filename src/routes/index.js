@@ -34,6 +34,8 @@ const verRoutes = require('./transaction/ver.routes'); // Stock Verification rou
 const supprRoutes = require('./transaction/supr.routes'); // Supplier Return routes
 // Sales routes
 const quoRoutes = require('./sales/quo.routes'); // Quotation routes
+const coiRoutes = require('./sales/coi.routes'); // Corporate Invoice routes
+const corRoutes = require('./sales/cor.routes'); // Sales Return routes
 
 
 
@@ -69,6 +71,8 @@ router.use('/transactions/ver', verRoutes);  // Stock Verification routes
 router.use('/transactions/supr', supprRoutes);  // Supplier Return routes
 // Sales routes
 router.use('/sales/quo', quoRoutes);  // Quotation routes
+router.use('/sales/coi', coiRoutes);  // Corporate Invoice routes
+router.use('/sales/cor', corRoutes);  // Sales Return routes
 console.log('All routes loaded successfully');
 
 
