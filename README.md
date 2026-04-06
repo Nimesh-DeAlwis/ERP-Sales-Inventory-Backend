@@ -1,6 +1,6 @@
 ﻿# ERP-Sales-Inventory-Backend
 
-# MoraCore ERP Backend
+# Mora ERP Backend
 
 A comprehensive Enterprise Resource Planning (ERP) system backend built with Node.js, Express.js, and SQL Server for retail business management.
 
@@ -251,8 +251,5 @@ This project is proprietary software for MoraCore ERP system.
 
 ## 📞 Support
 
-For support and questions, please contact the development team.
+For support and questions, please contact me.
 
----
-
-**MoraCore ERP** - Empowering retail businesses with comprehensive management solutions.
