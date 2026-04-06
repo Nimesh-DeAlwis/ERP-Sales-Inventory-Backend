@@ -1,19 +1,17 @@
 const { executeStoredProcedure, sql } = require('../../config/database');
-const customerService = require('../customer.service');
-const locationService = require('../../services/location.service');
 const { 
-    QUOHeader, 
-    QUODetail, 
-    QUOSearchCriteria 
-} = require('../../models/sales/quo.model');
+    CORHeader, 
+    CORDetail, 
+    CORSearchCriteria 
+} = require('../../models/sales/cor.model');
 
-class QUOService {
+class CORService {
     constructor() {}
 
     // Get next document number
     async getNextRunNo(type, comCode, locCode) {
         try {
-            const result = await executeStoredProcedure('sp_QUO_GetNextRunNo', [
+            const result = await executeStoredProcedure('sp_COR_GetNextRunNo', [
                 { name: 'type', value: type, type: sql.NVarChar(3) },
                 { name: 'comCode', value: comCode, type: sql.NVarChar(5) },
                 { name: 'locCode', value: locCode, type: sql.NVarChar(5) }
@@ -29,7 +27,7 @@ class QUOService {
     // Get transaction setup
     async getTransactionSetup(type) {
         try {
-            const result = await executeStoredProcedure('sp_QUO_GetSetup', [
+            const result = await executeStoredProcedure('sp_COR_GetSetup', [
                 { name: 'type', value: type, type: sql.NVarChar(3) }
             ]);
 
@@ -49,11 +47,50 @@ class QUOService {
         }
     }
 
-    // Create Quotation
-    async createQuotation(headerData, details, currentUser) {
+    // Search COI documents for reference
+    async searchCOIDocuments(searchText, comCode, locFrom) {
         try {
-            // Create header
-            await executeStoredProcedure('sp_QUO_CreateHeader', [
+            const result = await executeStoredProcedure('sp_COR_SearchCOI', [
+                { name: 'searchText', value: searchText, type: sql.NVarChar(100) },
+                { name: 'comCode', value: comCode, type: sql.NVarChar(5) },
+                { name: 'locFrom', value: locFrom, type: sql.NVarChar(5) }
+            ]);
+
+            return result.recordset || [];
+        } catch (error) {
+            console.error('Error searching COI documents:', error);
+            throw error;
+        }
+    }
+
+    // Get COI document details
+    async getCOIDocument(coiType, coiRunNo, comCode, locFrom) {
+        try {
+            const result = await executeStoredProcedure('sp_COR_GetCOI', [
+                { name: 'coiType', value: coiType, type: sql.NVarChar(3) },
+                { name: 'coiRunNo', value: coiRunNo, type: sql.NVarChar(13) },
+                { name: 'comCode', value: comCode, type: sql.NVarChar(5) },
+                { name: 'locFrom', value: locFrom, type: sql.NVarChar(5) }
+            ]);
+
+            if (result.recordsets[0].length === 0) {
+                return null;
+            }
+
+            return {
+                header: result.recordsets[0][0],
+                details: result.recordsets[1] || []
+            };
+        } catch (error) {
+            console.error('Error getting COI document:', error);
+            throw error;
+        }
+    }
+
+    // Create Sales Return (add back to inventory)
+    async createSalesReturn(headerData, details, currentUser) {
+        try {
+            const result = await executeStoredProcedure('sp_COR_CreateReturn', [
                 { name: 'type', value: headerData.type, type: sql.NVarChar(3) },
                 { name: 'runNo', value: headerData.runNo, type: sql.NVarChar(13) },
                 { name: 'comCode', value: headerData.comCode, type: sql.NVarChar(5) },
@@ -72,39 +109,18 @@ class QUOService {
                 { name: 'discPer', value: headerData.discPer, type: sql.Numeric(18,4) },
                 { name: 'netAmt', value: headerData.netAmt, type: sql.Numeric(18,4) },
                 { name: 'canUser', value: headerData.canUser || '', type: sql.NVarChar(10) },
+                { name: 'processed', value: 1, type: sql.Bit },
                 { name: 'cancelled', value: 0, type: sql.Bit },
+                { name: 'fullyUsed', value: 0, type: sql.Bit },
                 { name: 'refType', value: headerData.refType || '', type: sql.NVarChar(3) },
                 { name: 'refNo', value: headerData.refNo || '', type: sql.NVarChar(13) },
-                { name: 'createdBy', value: currentUser, type: sql.NVarChar(10) }
+                { name: 'createdBy', value: currentUser, type: sql.NVarChar(10) },
+                { name: 'detailsJSON', value: JSON.stringify(details), type: sql.NVarChar(sql.MAX) }
             ]);
-
-            // Create details
-            for (const detail of details) {
-                await executeStoredProcedure('sp_QUO_CreateDetail', [
-                    { name: 'lineNo', value: detail.lineNo, type: sql.Numeric(18,0) },
-                    { name: 'type', value: headerData.type, type: sql.NVarChar(3) },
-                    { name: 'runNo', value: headerData.runNo, type: sql.NVarChar(13) },
-                    { name: 'comCode', value: headerData.comCode, type: sql.NVarChar(5) },
-                    { name: 'locFrom', value: headerData.locFrom, type: sql.NVarChar(5) },
-                    { name: 'locTo', value: headerData.locTo || '', type: sql.NVarChar(5) },
-                    { name: 'saCode', value: detail.saCode || '', type: sql.NVarChar(10) },
-                    { name: 'proCode', value: detail.proCode, type: sql.NVarChar(25) },
-                    { name: 'stockCode', value: detail.stockCode || '', type: sql.NVarChar(25) },
-                    { name: 'proDesc', value: detail.proDesc, type: sql.NVarChar(100) },
-                    { name: 'unit', value: detail.unit, type: sql.NVarChar(10) },
-                    { name: 'unitQty', value: detail.unitQty, type: sql.Numeric(18,4) },
-                    { name: 'sPrice', value: detail.sPrice, type: sql.Numeric(18,4) },
-                    { name: 'cPrice', value: detail.cPrice, type: sql.Numeric(18,4) },
-                    { name: 'discPer', value: detail.discPer, type: sql.Numeric(18,4) },
-                    { name: 'discAmt', value: detail.discAmt, type: sql.Numeric(18,4) },
-                    { name: 'amount', value: detail.amount, type: sql.Numeric(18,4) },
-                    { name: 'createdBy', value: currentUser, type: sql.NVarChar(10) }
-                ]);
-            }
 
             return {
                 success: true,
-                message: 'Quotation created successfully',
+                message: 'Sales Return created successfully! Inventory updated.',
                 data: {
                     type: headerData.type,
                     runNo: headerData.runNo,
@@ -113,86 +129,15 @@ class QUOService {
                 }
             };
         } catch (error) {
-            console.error('Error in createQuotation:', error);
+            console.error('Error in createSalesReturn:', error);
             throw error;
         }
     }
 
-    // Update Quotation
-    async updateQuotation(header, details, currentUser) {
-        const transaction = new sql.Transaction();
+    // Cancel Sales Return (deduct back from inventory)
+    async cancelReturn(type, runNo, comCode, locFrom, currentUser) {
         try {
-            await transaction.begin();
-            const request = new sql.Request(transaction);
-
-            // Update Header
-            await request.query(`
-                UPDATE T_TBLQUOHEADER SET 
-                    HED_LOCFROM = '${header.locFrom}',
-                    HED_LOCTO = '${header.locTo}',
-                    HED_CUSCODE = '${header.cusCode || ''}',
-                    HED_REF1 = '${header.ref1 || ''}',
-                    HED_REF2 = '${header.ref2 || ''}',
-                    HED_GROAMT = ${header.groAmt || 0},
-                    HED_DISCPER = ${header.discPer || 0},
-                    HED_NETAMT = ${header.netAmt || 0},
-                    MD_DATE = GETDATE(),
-                    MD_BY = '${currentUser}'
-                WHERE HED_RUNNO = '${header.runNo}' 
-                AND HED_TYPE = '${header.type}' 
-                AND HED_COMCODE = '${header.comCode}'
-                AND HED_LOCFROM = '${header.locFrom}'
-                AND HED_CANCELLED = 0
-            `);
-
-            // Delete existing details
-            await request.query(`
-                DELETE FROM T_TBLQUODETAILS 
-                WHERE DET_RUNNO = '${header.runNo}' 
-                AND DET_TYPE = '${header.type}' 
-                AND DET_COMCODE = '${header.comCode}'
-                AND DET_LOCFROM = '${header.locFrom}'
-            `);
-
-            // Insert new details
-            for (const detail of details) {
-                await request.query(`
-                    INSERT INTO T_TBLQUODETAILS (
-                        DET_TYPE, DET_RUNNO, DET_COMCODE, DET_LINENO, 
-                        DET_LOCFROM, DET_LOCTO, DET_SACODE,
-                        DET_PROCODE, DET_STOCKCODE, DET_PRODESC, DET_UNIT,
-                        DET_UNITQTY, DET_CPRICE, DET_SPRICE, 
-                        DET_DISCPER, DET_DISCAMT, DET_AMOUNT,
-                        CR_DATE, CR_BY
-                    ) VALUES (
-                        '${header.type}', '${header.runNo}', '${header.comCode}', ${detail.lineNo},
-                        '${header.locFrom}', '${header.locTo || ''}', '${detail.saCode || ''}',
-                        '${detail.proCode}', '${detail.stockCode}', '${detail.proDesc}', '${detail.unit}',
-                        ${detail.unitQty}, ${detail.cPrice}, ${detail.sPrice},
-                        ${detail.discPer}, ${detail.discAmt}, ${detail.amount},
-                        GETDATE(), '${currentUser}'
-                    )
-                `);
-            }
-
-            await transaction.commit();
-            
-            return {
-                success: true,
-                message: 'Quotation updated successfully',
-                data: { runNo: header.runNo }
-            };
-        } catch (error) {
-            if (transaction) await transaction.rollback();
-            console.error('Error in updateQuotation:', error);
-            throw error;
-        }
-    }
-
-    // Cancel Quotation
-    async cancelDocument(type, runNo, comCode, locFrom, currentUser) {
-        try {
-            const result = await executeStoredProcedure('sp_QUO_Cancel', [
+            const result = await executeStoredProcedure('sp_COR_CancelReturn', [
                 { name: 'type', value: type, type: sql.NVarChar(3) },
                 { name: 'runNo', value: runNo, type: sql.NVarChar(13) },
                 { name: 'comCode', value: comCode, type: sql.NVarChar(5) },
@@ -202,11 +147,11 @@ class QUOService {
 
             return {
                 success: true,
-                message: 'Quotation cancelled successfully',
+                message: 'Sales Return cancelled successfully! Inventory restored.',
                 data: result.recordset[0]
             };
         } catch (error) {
-            console.error('Error in cancelDocument:', error);
+            console.error('Error in cancelReturn:', error);
             throw error;
         }
     }
@@ -214,7 +159,7 @@ class QUOService {
     // Get document by ID
     async getDocumentByNo(type, runNo, comCode, locFrom) {
         try {
-            const result = await executeStoredProcedure('sp_QUO_GetByDocNo', [
+            const result = await executeStoredProcedure('sp_COR_GetByDocNo', [
                 { name: 'type', value: type, type: sql.NVarChar(3) },
                 { name: 'runNo', value: runNo, type: sql.NVarChar(13) },
                 { name: 'comCode', value: comCode, type: sql.NVarChar(5) },
@@ -226,8 +171,8 @@ class QUOService {
             }
 
             return {
-                header: new QUOHeader(result.recordsets[0][0]),
-                details: result.recordsets[1].map(row => new QUODetail(row))
+                header: new CORHeader(result.recordsets[0][0]),
+                details: result.recordsets[1].map(row => new CORDetail(row))
             };
         } catch (error) {
             console.error('Error in getDocumentByNo:', error);
@@ -238,19 +183,20 @@ class QUOService {
     // Search documents
     async searchDocuments(criteria) {
         try {
-            const searchCriteria = new QUOSearchCriteria(criteria);
+            const searchCriteria = new CORSearchCriteria(criteria);
 
-            const result = await executeStoredProcedure('sp_QUO_Search', [
+            const result = await executeStoredProcedure('sp_COR_Search', [
                 { name: 'searchText', value: searchCriteria.searchText, type: sql.NVarChar(100) },
                 { name: 'type', value: searchCriteria.type, type: sql.NVarChar(3) },
                 { name: 'fromDate', value: searchCriteria.fromDate, type: sql.Date },
                 { name: 'toDate', value: searchCriteria.toDate, type: sql.Date },
                 { name: 'cusCode', value: searchCriteria.cusCode, type: sql.NVarChar(10) },
+                { name: 'processed', value: searchCriteria.processed, type: sql.Bit },
                 { name: 'page', value: searchCriteria.page, type: sql.Int },
                 { name: 'pageSize', value: searchCriteria.pageSize, type: sql.Int }
             ]);
 
-            const documents = result.recordset.map(row => new QUOHeader(row));
+            const documents = result.recordset.map(row => new CORHeader(row));
 
             return {
                 documents,
@@ -300,6 +246,7 @@ class QUOService {
                 }
             } catch (error) {
                 console.warn('Could not fetch location name:', error);
+                // Continue with location code as fallback
             }
 
             // Fetch customer name if not present
@@ -314,27 +261,29 @@ class QUOService {
                     }
                 } catch (error) {
                     console.warn('Could not fetch customer name:', error);
+                    // Continue with empty name as fallback
                 }
             }
 
             // Header
-            doc.fontSize(20).text('QUOTATION', { align: 'center' });
+            doc.fontSize(20).text('SALES RETURN NOTE', { align: 'center' });
             doc.moveDown();
             
             doc.fontSize(10);
-            doc.text(`Quotation No: ${header.runNo}`, 50, 100);
+            doc.text(`Return No: ${header.runNo}`, 50, 100);
             doc.text(`Date: ${new Date(header.txnDate).toLocaleDateString()}`, 50, 115);
             doc.text(`Customer: ${customerName || header.cusCode}`, 50, 130);
             if (customerName && header.cusCode) {
                 doc.text(`(${header.cusCode})`, 50, 145);
             }
+            doc.text(`Invoice Ref: ${header.refNo || 'N/A'}`, 50, 160);
             doc.text(`Location: ${header.locFrom} - ${locationName}`, 300, 100);
-            doc.text(`Status: ${header.cancelled ? 'Cancelled' : 'Active'}`, 300, 115);
+            doc.text(`Status: ${header.cancelled ? 'Cancelled' : 'Processed'}`, 300, 115);
 
             doc.moveDown(4);
 
             // Table Header
-            const tableTop = 180;
+            const tableTop = 200;
             const itemCodeX = 50;
             const descX = 150;
             const qtyX = 350;
@@ -344,8 +293,8 @@ class QUOService {
             doc.font('Helvetica-Bold');
             doc.text('Item Code', itemCodeX, tableTop);
             doc.text('Description', descX, tableTop);
-            doc.text('Qty', qtyX, tableTop);
-            doc.text('Unit Price', priceX, tableTop);
+            doc.text('Return Qty', qtyX, tableTop);
+            doc.text('Price', priceX, tableTop);
             doc.text('Total', totalX, tableTop);
             doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
             doc.font('Helvetica');
@@ -370,18 +319,8 @@ class QUOService {
             doc.moveTo(50, y).lineTo(550, y).stroke();
             y += 10;
             doc.font('Helvetica-Bold');
-            doc.text('Gross Amount:', 350, y);
-            doc.text(header.groAmt.toFixed(2), 490, y);
-            y += 15;
-            doc.text('Discount:', 350, y);
-            doc.text(`${header.discPer}%`, 490, y);
-            y += 15;
-            doc.fontSize(12).text('Net Amount:', 350, y);
+            doc.text('Total Return Value:', 350, y);
             doc.text(header.netAmt.toFixed(2), 490, y);
-
-            // Footer Note
-            y += 30;
-            doc.fontSize(8).text('This is a quotation only. Prices are valid for 30 days from the date of issue.', 50, y, { align: 'center' });
 
             doc.end();
 
@@ -398,4 +337,4 @@ class QUOService {
     }
 }
 
-module.exports = new QUOService();
+module.exports = new CORService();

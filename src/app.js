@@ -92,6 +92,8 @@ app.use('/api/transactions/ver', require('./routes/transaction/ver.routes'));
 app.use('/api/transactions/supr', require('./routes/transaction/supr.routes'));
 //sale routes
 app.use('/api/sales/quo', require('./routes/sales/quo.routes'));
+app.use('/api/sales/coi', require('./routes/sales/coi.routes'));
+app.use('/api/sales/cor', require('./routes/sales/cor.routes'));
 console.log('All routes loaded successfully');
 
 
