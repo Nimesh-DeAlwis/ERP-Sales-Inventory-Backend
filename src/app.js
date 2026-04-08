@@ -94,6 +94,9 @@ app.use('/api/transactions/supr', require('./routes/transaction/supr.routes'));
 app.use('/api/sales/quo', require('./routes/sales/quo.routes'));
 app.use('/api/sales/coi', require('./routes/sales/coi.routes'));
 app.use('/api/sales/cor', require('./routes/sales/cor.routes'));
+//voucher routes
+// Physical Voucher routes
+app.use('/api/vouchers/physical-voucher/groups', require('./routes/vouchers/physicalvoucher/pvgroup.routes'));
 console.log('All routes loaded successfully');
 
 

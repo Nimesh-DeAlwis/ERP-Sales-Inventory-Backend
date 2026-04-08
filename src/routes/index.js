@@ -36,6 +36,9 @@ const supprRoutes = require('./transaction/supr.routes'); // Supplier Return rou
 const quoRoutes = require('./sales/quo.routes'); // Quotation routes
 const coiRoutes = require('./sales/coi.routes'); // Corporate Invoice routes
 const corRoutes = require('./sales/cor.routes'); // Sales Return routes
+// Voucher routes
+// Physical Voucher routes
+const pvGroupRoutes = require('./vouchers/physicalvoucher/pvgroup.routes');
 
 
 
@@ -73,6 +76,9 @@ router.use('/transactions/supr', supprRoutes);  // Supplier Return routes
 router.use('/sales/quo', quoRoutes);  // Quotation routes
 router.use('/sales/coi', coiRoutes);  // Corporate Invoice routes
 router.use('/sales/cor', corRoutes);  // Sales Return routes
+// Voucher routes
+// Physical Voucher routes
+router.use('/vouchers/physical-voucher/groups', pvGroupRoutes);  // Physical Voucher Group routes
 console.log('All routes loaded successfully');
 
 
