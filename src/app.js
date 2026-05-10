@@ -97,6 +97,11 @@ app.use('/api/sales/cor', require('./routes/sales/cor.routes'));
 //voucher routes
 // Physical Voucher routes
 app.use('/api/vouchers/physical-voucher/groups', require('./routes/vouchers/physicalvoucher/pvgroup.routes'));
+app.use('/api/vouchers/physical-voucher/po', require('./routes/vouchers/physicalvoucher/pvcpo.routes'));
+app.use('/api/vouchers/physical-voucher/grn', require('./routes/vouchers/physicalvoucher/pvcgrn.routes'));  // Physical Voucher GRN routes
+//e-voucher routes
+app.use('/api/vouchers/e-voucher/groups', require('./routes/vouchers/evoucher/evgroup.routes'));
+
 console.log('All routes loaded successfully');
 
 

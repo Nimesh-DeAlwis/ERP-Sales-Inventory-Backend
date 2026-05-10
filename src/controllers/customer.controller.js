@@ -66,7 +66,7 @@ const updateCustomer = async (req, res) => {
     }
 };
 
-// Upload customer photo - FIXED VERSION
+// Upload customer photo 
 const uploadCustomerPhoto = async (req, res) => {
     try {
         const customerCode = req.params.id;

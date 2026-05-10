@@ -2,14 +2,13 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { executeStoredProcedure, sql } = require('../config/database');
 
-// Make sure this function exists and is exported
 const login = async (req, res) => {
     try {
         const { username, password } = req.body;
         
         console.log('Login attempt for user:', username);
         
-        // Step 1: Validate user credentials and get basic info
+        // Validate user credentials and get basic info
         const userResult = await executeStoredProcedure('usp_ValidateUserLogin', [
             { name: 'username', value: username, type: sql.NVarChar }
         ]);
@@ -24,7 +23,7 @@ const login = async (req, res) => {
         
         const user = userResult.recordset[0];
         
-        // Step 2: Check if user is active
+        // Check if user is active
         if (user.UH_STATUS === 0) {
             console.log('User inactive:', username);
             return res.status(403).json({ 
@@ -33,7 +32,7 @@ const login = async (req, res) => {
             });
         }
         
-        // Step 3: Verify password
+        // Verify password
         const isValidPassword = await bcrypt.compare(password, user.UH_PASSWORD);
         if (!isValidPassword) {
             console.log('Invalid password for user:', username);
@@ -49,14 +48,14 @@ const login = async (req, res) => {
             });
         }
         
-        // Step 4: Reset login attempts on successful login
+        //Reset login attempts on successful login
         await executeStoredProcedure('usp_ResetLoginAttempts', [
             { name: 'userId', value: username, type: sql.NVarChar }
         ]);
         
         console.log('Login successful for user:', username);
         
-        // Return user info WITHOUT locations - user will fetch locations on demand
+        // Return user info WITHOUT locations 
         res.json({
             success: true,
             message: 'Login successful. Click "Load Locations" to proceed.',
@@ -176,7 +175,7 @@ const verifyLocation = async (req, res) => {
         
         const locationName = permissionResult.recordset[0].LocationName;
         
-        // Step 2: Get user menus with permissions based on user group
+        //Get user menus with permissions based on user group
         const menusResult = await executeStoredProcedure('usp_GetUserMenusWithPermissions', [
             { name: 'userId', value: userId, type: sql.NVarChar },
             { name: 'locationCode', value: locationCode, type: sql.NVarChar }
@@ -184,10 +183,10 @@ const verifyLocation = async (req, res) => {
         
         const menus = menusResult.recordset;
         
-        // Step 3: Organize menus hierarchically
+        //Organize menus hierarchically
         const organizedMenus = organizeMenusHierarchically(menus);
         
-        // Step 4: Generate JWT token
+        //Generate JWT token
         const token = jwt.sign(
             { 
                 userId: userId,
@@ -199,7 +198,7 @@ const verifyLocation = async (req, res) => {
             { expiresIn: '6h' }
         );
         
-        // Step 5: Store session with menus
+        //Store session with menus
         req.session.user = {
             userId: userId,
             locationCode: locationCode,

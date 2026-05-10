@@ -9,7 +9,11 @@ const {
 } = require('../validators/location.validator');
 const { authenticateToken, checkUserStatus } = require('../middleware/auth.middleware');
 
-// Apply authentication middleware to all routes
+// Public endpoints (no auth required for dropdowns)
+router.get('/active', locationController.getAllActiveLocations);
+router.get('/dropdown', locationController.getLocationsForDropdown);
+
+// Apply authentication middleware to protected routes
 router.use(authenticateToken);
 router.use(checkUserStatus);
 
@@ -17,10 +21,6 @@ router.use(checkUserStatus);
 router.post('/', validateCreateLocation, locationController.createLocation);
 router.get('/', validateSearchLocations, locationController.getAllLocations);
 router.get('/check-duplicate', validateCheckDuplicate, locationController.checkDuplicateLocationCode);
-
-// Public endpoints (no auth required for dropdowns)
-router.get('/active', locationController.getAllActiveLocations);
-router.get('/dropdown', locationController.getLocationsForDropdown);
 
 // Location specific operations
 router.get('/:id', locationController.getLocationById);
