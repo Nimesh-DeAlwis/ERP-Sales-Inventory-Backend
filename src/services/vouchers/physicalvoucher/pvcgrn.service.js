@@ -14,7 +14,6 @@ class PVCGRNService {
             };
         } catch (error) {
             console.error('Error getting setup:', error);
-            // Return default setup if stored procedure doesn't exist
             return {
                 success: true,
                 data: {
@@ -41,7 +40,6 @@ class PVCGRNService {
             };
         } catch (error) {
             console.error('Error getting next run number:', error);
-            // Generate a numeric run number in format: 13 digits (e.g., 1000100000001)
             const timestamp = Date.now().toString();
             const suffix = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
             const numericRunNo = (100001 + parseInt(timestamp.slice(-8))).toString().slice(0, 13).padEnd(13, '0');
@@ -70,7 +68,6 @@ class PVCGRNService {
             };
         } catch (error) {
             console.error('Error getting PO:', error);
-            // Return empty PO data if stored procedure doesn't exist
             return {
                 success: true,
                 data: {
@@ -94,8 +91,6 @@ class PVCGRNService {
                 return { success: false, message: detailValidation.errors.join(', ') };
             }
 
-            let generatedVouchersJson = '';
-            
             const params = [
                 { name: 'HED_TYPE', value: headerData.HED_TYPE, type: sql.NVarChar(3) },
                 { name: 'HED_RUNNO', value: headerData.HED_RUNNO, type: sql.NVarChar(13) },
@@ -115,8 +110,7 @@ class PVCGRNService {
                 { name: 'DET_VCBSTART', value: detailData.DET_VCBSTART, type: sql.Numeric(18,2) },
                 { name: 'DET_SVALUE', value: detailData.DET_SPRICE * detailData.DET_VCBQTY, type: sql.Numeric(18,2) },
                 { name: 'DET_CVALUE', value: (detailData.DET_CPRICE || 0) * detailData.DET_VCBQTY, type: sql.Numeric(18,2) },
-                { name: 'CR_BY', value: createdBy, type: sql.NVarChar(10) },
-                { name: 'GeneratedVouchersJson', value: generatedVouchersJson, type: sql.NVarChar(sql.MAX), isOutput: true }
+                { name: 'CR_BY', value: createdBy, type: sql.NVarChar(10) }
             ];
             
             const result = await executeStoredProcedure('sp_PVCGRN_Create', params);
@@ -135,15 +129,23 @@ class PVCGRNService {
 
     async processGRN(type, runNo, modifiedBy) {
         try {
-            const params = [
-                { name: 'HED_TYPE', value: type, type: sql.NVarChar(3) },
-                { name: 'HED_RUNNO', value: runNo, type: sql.NVarChar(13) },
-                { name: 'MD_BY', value: modifiedBy, type: sql.NVarChar(10) }
-            ];
-            const result = await executeStoredProcedure('sp_PVCGRN_Process', params);
+            // Create a request with OUTPUT parameter
+            const { getPool } = require('../../../config/database');
+            const pool = await getPool();
+            const request = pool.request();
+            
+            request.input('HED_TYPE', sql.NVarChar(3), type);
+            request.input('HED_RUNNO', sql.NVarChar(13), runNo);
+            request.input('MD_BY', sql.NVarChar(10), modifiedBy);
+            request.output('GeneratedVouchersJson', sql.NVarChar(sql.MAX));
+            
+            const result = await request.execute('sp_PVCGRN_Process');
+            
             return {
                 success: result.recordset[0]?.Success === 1,
-                message: result.recordset[0]?.Message
+                message: result.recordset[0]?.Message,
+                voucherCount: result.recordset[0]?.VoucherCount || 0,
+                generatedVouchers: result.output.GeneratedVouchersJson
             };
         } catch (error) {
             console.error('Error processing GRN:', error);
@@ -199,7 +201,7 @@ class PVCGRNService {
                 { name: 'FROM_DATE', value: criteria.fromDate, type: sql.Date },
                 { name: 'TO_DATE', value: criteria.toDate, type: sql.Date },
                 { name: 'SUPPLIER', value: criteria.supCode, type: sql.NVarChar(10) },
-                { name: 'STATUS', value: criteria.processed, type: sql.Int },
+                { name: 'STATUS', value: criteria.status, type: sql.Int },
                 { name: 'PAGE', value: criteria.page || 1, type: sql.Int },
                 { name: 'PAGE_SIZE', value: criteria.pageSize || 20, type: sql.Int }
             ];

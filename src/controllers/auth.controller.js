@@ -182,9 +182,10 @@ const verifyLocation = async (req, res) => {
         ]);
         
         const menus = menusResult.recordset;
+        const authorizedMenus = filterAuthorizedMenus(menus);
         
         //Organize menus hierarchically
-        const organizedMenus = organizeMenusHierarchically(menus);
+        const organizedMenus = organizeMenusHierarchically(authorizedMenus);
         
         //Generate JWT token
         const token = jwt.sign(
@@ -206,7 +207,7 @@ const verifyLocation = async (req, res) => {
             userGroup: userGroup,
             isAuthenticated: true,
             menus: organizedMenus, // Store menus in session
-            permissions: extractPermissions(menus)
+            permissions: extractPermissions(authorizedMenus)
         };
         
         console.log('Location verified successfully for user:', userId);
@@ -224,7 +225,7 @@ const verifyLocation = async (req, res) => {
                     locationName: locationName
                 },
                 menus: organizedMenus,
-                permissions: extractPermissions(menus)
+                permissions: extractPermissions(authorizedMenus)
             }
         });
         
@@ -339,6 +340,36 @@ const organizeMenusHierarchically = (menus) => {
     });
     
     return rootMenus;
+};
+
+// Helper function to filter out unauthorized menus while preserving ancestor menu groups
+const filterAuthorizedMenus = (menus) => {
+    const menuMap = new Map();
+    const authorizedTags = new Set();
+
+    menus.forEach(menu => {
+        if (!menu || !menu.MENU_TAG) return;
+        menuMap.set(menu.MENU_TAG, menu);
+    });
+
+    const hasAccess = (menu) => {
+        const menuRight = menu.MenuRight || '000000';
+        return menuRight.charAt(0) === '1';
+    };
+
+    menus.forEach(menu => {
+        if (!menu || !menu.MENU_TAG) return;
+        if (!hasAccess(menu)) return;
+
+        let current = menu;
+        while (current && current.MENU_TAG && !authorizedTags.has(current.MENU_TAG)) {
+            authorizedTags.add(current.MENU_TAG);
+            if (!current.MENU_PARENT_ID) break;
+            current = menuMap.get(current.MENU_PARENT_ID);
+        }
+    });
+
+    return menus.filter(menu => menu && menu.MENU_TAG && authorizedTags.has(menu.MENU_TAG));
 };
 
 // Helper function to extract permissions from menus

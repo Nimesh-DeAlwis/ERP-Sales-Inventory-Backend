@@ -99,6 +99,7 @@ app.use('/api/sales/cor', require('./routes/sales/cor.routes'));
 app.use('/api/vouchers/physical-voucher/groups', require('./routes/vouchers/physicalvoucher/pvgroup.routes'));
 app.use('/api/vouchers/physical-voucher/po', require('./routes/vouchers/physicalvoucher/pvcpo.routes'));
 app.use('/api/vouchers/physical-voucher/grn', require('./routes/vouchers/physicalvoucher/pvcgrn.routes'));  // Physical Voucher GRN routes
+app.use('/api/vouchers/physical-writeoff', require('./routes/vouchers/physicalvoucher/pvcwriteoff.routes')); // Physical Voucher Write Off
 //e-voucher routes
 app.use('/api/vouchers/e-voucher/groups', require('./routes/vouchers/evoucher/evgroup.routes'));
 

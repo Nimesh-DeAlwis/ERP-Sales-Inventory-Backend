@@ -50,10 +50,10 @@ const upload = multer({
     }
 });
 
-// IMPORTANT: Public route (no auth required) - must come BEFORE auth middleware
+
 router.get('/next-code', customerController.getNextCustomerCode);
 
-// Apply authentication middleware to all routes AFTER public routes
+
 const { authenticateToken, checkUserStatus } = require('../middleware/auth.middleware');
 
 // Customer routes - ORDER MATTERS!
