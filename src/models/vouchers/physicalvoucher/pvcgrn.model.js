@@ -46,9 +46,12 @@ class PVCGRNDetail {
 
     static validate(data) {
         const errors = [];
-        if (!data.DET_VCBSTART || data.DET_VCBSTART <= 0) errors.push('Voucher start number is required');
-        if (!data.DET_VCBEND || data.DET_VCBEND <= 0) errors.push('Voucher end number is required');
-        if (data.DET_VCBEND < data.DET_VCBSTART) errors.push('End number must be greater than start number');
+        const start = Number(data.DET_VCBSTART);
+        const end = Number(data.DET_VCBEND);
+
+        if (!start || start <= 0) errors.push('Voucher start number is required');
+        if (!end || end <= 0) errors.push('Voucher end number is required');
+        if (!isNaN(start) && !isNaN(end) && end < start) errors.push('End number must be greater than start number');
         if (!data.DET_SPRICE || data.DET_SPRICE <= 0) errors.push('Voucher value is required');
         return { isValid: errors.length === 0, errors };
     }

@@ -47,6 +47,7 @@ class PVCPOSearchCriteria {
         this.supCode = criteria.supCode || null;
         this.processed = criteria.processed !== undefined ? criteria.processed : null;
         this.cancelled = criteria.cancelled !== undefined ? criteria.cancelled : null;
+        this.fullyUsed = criteria.fullyUsed !== undefined ? criteria.fullyUsed : null;
         this.page = parseInt(criteria.page) || 1;
         this.pageSize = parseInt(criteria.pageSize) || 20;
     }

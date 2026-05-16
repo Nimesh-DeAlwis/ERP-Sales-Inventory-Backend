@@ -41,6 +41,7 @@ const corRoutes = require('./sales/cor.routes'); // Sales Return routes
 const pvGroupRoutes = require('./vouchers/physicalvoucher/pvgroup.routes');
 const pvcpoRoutes = require('./vouchers/physicalvoucher/pvcpo.routes');  // Physical Voucher PO routes
 const pvcgrnRoutes = require('./vouchers/physicalvoucher/pvcgrn.routes');  // Physical Voucher GRN routes
+const pvcwriteoffRoutes = require('./vouchers/physicalvoucher/pvcwriteoff.routes'); //Physical Voucher Write Off
 //e-voucher routes
 const evGroupRoutes = require('./vouchers/evoucher/evgroup.routes');  // E-Voucher Group routes
 
@@ -85,6 +86,8 @@ router.use('/sales/cor', corRoutes);  // Sales Return routes
 router.use('/vouchers/physical-voucher/groups', pvGroupRoutes);  // Physical Voucher Group routes
 router.use('/vouchers/physical-voucher/po', pvcpoRoutes);  // Physical Voucher PO routes
 router.use('/vouchers/physical-voucher/grn', pvcgrnRoutes);  // Physical Voucher GRN routes
+router.use('/vouchers/physical-writeoff', pvcwriteoffRoutes); //Physical Voucher Write Off
+
 //e-voucher routes
 router.use('/vouchers/e-voucher/groups', evGroupRoutes);  // E-Voucher Group routes
 console.log('All routes loaded successfully');

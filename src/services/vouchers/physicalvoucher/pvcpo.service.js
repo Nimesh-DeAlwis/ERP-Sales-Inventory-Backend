@@ -220,6 +220,7 @@ class PVCPOService {
                 { name: 'supCode', value: searchCriteria.supCode, type: sql.NVarChar(10) },
                 { name: 'processed', value: searchCriteria.processed, type: sql.Int },
                 { name: 'cancelled', value: searchCriteria.cancelled, type: sql.Int },
+                { name: 'fullyUsed', value: searchCriteria.fullyUsed, type: sql.Int },
                 { name: 'page', value: searchCriteria.page, type: sql.Int },
                 { name: 'pageSize', value: searchCriteria.pageSize, type: sql.Int }
             ]);
